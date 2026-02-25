@@ -1,36 +1,54 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Memory Chat
+
+A Next.js chat application featuring persistent vector memory, specific model filtering (via OpenRouter), and streaming UI using the AI SDK v6.
 
 ## Getting Started
 
-First, run the development server:
-
+### 1. Start the PostgreSQL Database (Docker)
+Ensure Docker is running on your machine, then start the PostgreSQL instance with the pgvector extension:
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+docker-compose up -d
 ```
 
+### 2. Install Dependencies
+```bash
+npm install
+```
+
+### 3. Run the Development Server
+```bash
+npm run dev
+```
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+---
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Database Management (Drizzle ORM)
 
-## Learn More
+This project uses Drizzle ORM to manage the PostgreSQL schema. 
+The schema definition is located at `src/db/schema.ts`.
 
-To learn more about Next.js, take a look at the following resources:
+### Push Schema Changes directly (Development)
+If you make changes to `schema.ts`, you can push them directly to your local database without generating a migration file:
+```bash
+npx drizzle-kit push
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### Generate Migration Files
+If you want to track schema changes over time (for production):
+```bash
+npx drizzle-kit generate
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### Apply Migrations
+To apply the generated migrations to the database:
+```bash
+npx drizzle-kit migrate
+```
 
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+### Open Drizzle Studio
+To launch a visual web interface for inspecting your database rows and columns:
+```bash
+npx drizzle-kit studio
+```
+This will open a local web server (typically on port 4983) where you can manually view and edit your data.

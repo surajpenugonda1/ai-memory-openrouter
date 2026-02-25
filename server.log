@@ -1,0 +1,29 @@
+
+> next-app@0.1.0 start
+> next start -p 3001
+
+▲ Next.js 16.1.6
+- Local:         http://localhost:3001
+- Network:       http://127.1.1.1:3001
+
+✓ Starting...
+✓ Ready in 298ms
+[DEBUG] useChat - STATUS: ready MESSAGES: []
+[DEBUG] useChat - STATUS: ready MESSAGES: []
+[DEBUG] useChat - STATUS: ready MESSAGES: []
+Chat API Error: Error: Failed query: insert into "conversations" ("id", "user_id", "title", "updated_at") values (default, $1, $2, default) returning "id", "user_id", "title", "updated_at"
+params: f91a4f64-0fbf-4e07-95ea-189630c70029,huuu...
+    at n1.queryWithCache (.next/server/chunks/src_db_index_ts_a71f50f0._.js:28:37214)
+    at async (.next/server/chunks/src_db_index_ts_a71f50f0._.js:28:39623) {
+  query: 'insert into "conversations" ("id", "user_id", "title", "updated_at") values (default, $1, $2, default) returning "id", "user_id", "title", "updated_at"',
+  params: [Array],
+  [cause]: AggregateError: 
+      at ignore-listed frames {
+    code: 'ECONNREFUSED'
+  }
+}
+[DEBUG] useChat - STATUS: ready MESSAGES: []
+[DEBUG] useChat - STATUS: ready MESSAGES: []
+[DEBUG] useChat - STATUS: ready MESSAGES: []
+[DEBUG] useChat - STATUS: ready MESSAGES: []
+[DEBUG] useChat - STATUS: ready MESSAGES: []
