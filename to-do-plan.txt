@@ -1,3 +1,8 @@
 1 server side -> check thinking , search , results , save in db 
 2 check if i need to pass extra params , in open router ai sdk for getting search tools , search results 
 3 write after calling logic for to smaller model with optimised pormpt and save data in vector
+
+
+/workspaces/ai-memory-openrouter/src/app/api/chat/route.ts
+
+-> pass tool call , web search for search enabled api 
