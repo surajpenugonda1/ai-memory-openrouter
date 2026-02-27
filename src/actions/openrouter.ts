@@ -15,6 +15,8 @@ export type OpenRouterModel = {
         request: string;
     };
     isPremium: boolean;
+    supportsSearch: boolean;
+    supportsThinking: boolean;
 };
 
 /**
@@ -39,9 +41,15 @@ export async function getOpenRouterModels(): Promise<OpenRouterModel[]> {
             context_length: number;
             pricing: { prompt: string; completion: string; image: string; request: string };
             architecture?: { modality?: string };
+            top_provider?: { is_moderated?: boolean };
         }
 
-        const modelsRaw = json.data as OpenRouterModelResponse[];
+        // Let's type support parameters for OpenRouter
+        type ModelData = OpenRouterModelResponse & {
+            supported_parameters?: string[];
+        };
+
+        const modelsRaw = json.data as ModelData[];
 
         const ALLOWED_PROVIDERS = [
             'openai/',
@@ -66,12 +74,19 @@ export async function getOpenRouterModels(): Promise<OpenRouterModel[]> {
                 const completionPrice = parseFloat(model.pricing.completion || "0");
                 const isPremium = promptPrice > 0 || completionPrice > 0;
 
+                // Check supported parameters for capabilities
+                const supportedParams = model.supported_parameters || [];
+                const supportsSearch = supportedParams.includes("tools") || supportedParams.includes("tool_choice");
+                const supportsThinking = supportedParams.includes("include_reasoning") || supportedParams.includes("reasoning");
+
                 return {
                     id: model.id,
                     name: model.name,
                     context_length: model.context_length,
                     pricing: model.pricing,
                     isPremium,
+                    supportsSearch,
+                    supportsThinking,
                 };
             })
             // Sort: Normal (Free) models first, then by name

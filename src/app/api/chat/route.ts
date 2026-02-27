@@ -29,7 +29,9 @@ export async function POST(req: Request) {
             // searchEnabled and thinkEnabled are received from the client
             // but not yet used. Prefixed with _ to avoid lint warnings.
             searchEnabled: _searchEnabled,
+            searchResultCount = 3,
             thinkEnabled: _thinkEnabled,
+            reasoningLevel = 'medium',
             memoryEnabled,
             conversationId
         } = await req.json();
@@ -72,16 +74,12 @@ export async function POST(req: Request) {
         // 3. Optional Memory Pipeline (pgvector RAG)
         let systemPrompt = "You are a helpful, premium AI assistant. Format your responses with markdown.";
 
-        if (true && latestMessageText.length > 5) {
+        if (memoryEnabled && latestMessageText.length > 5) {
             try {
-                console.log('\n[Memory Pipeline] ═══════════════════════════════════════');
-                console.log('[Memory Pipeline] Query:', latestMessageText);
-                console.log('[Memory Pipeline] Embedding user message for vector search...');
                 const { embedding } = await embed({
                     model: openrouter.embedding('text-embedding-3-small'),
                     value: latestMessageText,
                 });
-                console.log('[Memory Pipeline] Embedding generated, dimensions:', embedding.length);
 
                 const similarity = sql<number>`1 - (${memory_chunks.embedding} <=> ${JSON.stringify(embedding)}::vector)`;
 
@@ -105,15 +103,7 @@ export async function POST(req: Request) {
                     const relevantChunks = similarChunks.filter(c => c.similarity > 0.2);
                     const contextText = relevantChunks.map(c => c.content).join("\n\n");
                     systemPrompt += `\n\nRelevant past memories/context:\n${contextText}`;
-                    console.log(`[Memory Pipeline] ✅ Injected ${relevantChunks.length} chunks into system prompt (${contextText.length} chars)`);
-                    console.log('[Memory Pipeline] Context appended to prompt:');
-                    console.log('  ┌──────────────────────────────────────');
-                    contextText.split('\n').forEach(line => console.log(`  │ ${line}`));
-                    console.log('  └──────────────────────────────────────');
-                } else {
-                    console.log('[Memory Pipeline] ⚠️ No chunks passed the 0.2 similarity threshold — skipping memory injection');
                 }
-                console.log('[Memory Pipeline] ═══════════════════════════════════════\n');
             } catch (e) {
                 console.error("[Memory Pipeline] ❌ Vector retrieval failed, proceeding without memory:", e);
             }
@@ -126,25 +116,59 @@ export async function POST(req: Request) {
             { role: 'system' as const, content: systemPrompt },
             ...coreMessages
         ];
+
+        // Define settings for plugins/reasoning based on input configuration
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const settings: any = {};
+
+        if (_searchEnabled && searchResultCount) {
+            settings.plugins = [
+                { id: 'web', max_results: Number(searchResultCount) }
+            ];
+        }
+
+        if (_thinkEnabled && reasoningLevel) {
+            settings.reasoning = {
+                effort: reasoningLevel
+            };
+        }
+
         console.log('\n[LLM Request] ═══════════════════════════════════════');
         console.log('[LLM Request] Model:', modelId || 'openai/gpt-4o-mini');
+        console.log(`[LLM Request] SearchEnabled: ${_searchEnabled}, ThinkingEnabled: ${_thinkEnabled}`);
         console.log(`[LLM Request] Total messages: ${finalMessages.length}`);
         finalMessages.forEach((m, i) => {
             console.log(`  [${i}] role=${m.role} | ${m.content.length} chars | content="${m.content.slice(0, 150)}${m.content.length > 150 ? '...' : ''}"`);
         });
         console.log('[LLM Request] ═══════════════════════════════════════\n');
         const result = streamText({
-            model: openrouter.chat(modelId || 'openai/gpt-4o-mini'),
+            model: openrouter.chat(modelId || 'openai/gpt-4o-mini', settings),
             messages: finalMessages,
             // OpenRouter specific plugins/features can be appended to Provider Options in AI SDK 3.x
             // Or natively handled by the model. 
-            async onFinish({ text, response }) {
+            async onFinish(data) {
+                const { text, response } = data;
+                console.log("data", data);
                 // Save AI response
                 try {
                     // Extract structured parts from the response messages
                     // This handles reasoning and text parts from newer AI SDK versions
                     const assistantMessage = response.messages.find(m => m.role === 'assistant');
-                    const parts = assistantMessage?.content || [{ type: 'text', text }];
+                    let parts = assistantMessage?.content || [{ type: 'text', text }];
+
+                    // Map OpenRouter search plugins sources to `source-url` types
+                    if (Array.isArray(parts)) {
+                        parts = parts.map((part: any) => {
+                            if (part.type === 'source' && part.sourceType === 'url') {
+                                return {
+                                    type: 'source-url',
+                                    url: part.url,
+                                    title: part.title,
+                                }
+                            }
+                            return part;
+                        });
+                    }
 
                     await db.insert(messages).values({
                         conversationId: activeConversationId,
@@ -206,6 +230,7 @@ export async function POST(req: Request) {
         // 5. Return as UIMessageStream (required for AI SDK v6 useChat)
         return result.toUIMessageStreamResponse({
             headers: { 'x-conversation-id': activeConversationId },
+            sendSources: true
         });
 
     } catch (error: unknown) {

@@ -108,6 +108,7 @@ interface MessageBubbleProps {
 }
 
 export const MessageBubble = memo(function MessageBubble({ parts, role }: MessageBubbleProps) {
+    console.log(parts)
     // For user messages, just render text
     if (role === 'user') {
         const text = parts
@@ -136,6 +137,13 @@ export const MessageBubble = memo(function MessageBubble({ parts, role }: Messag
                 />
             )}
 
+
+
+            {/* 3. Main text section */}
+            {mainText.length > 0 && (
+                <MarkdownBlock content={mainText} />
+            )}
+
             {/* 2. Source URLs section */}
             {sourceParts.length > 0 && (
                 <div className="space-y-1.5">
@@ -148,11 +156,6 @@ export const MessageBubble = memo(function MessageBubble({ parts, role }: Messag
                         ))}
                     </div>
                 </div>
-            )}
-
-            {/* 3. Main text section */}
-            {mainText.length > 0 && (
-                <MarkdownBlock content={mainText} />
             )}
         </div>
     );

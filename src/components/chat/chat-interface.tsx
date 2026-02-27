@@ -19,7 +19,9 @@ export function ChatInterface({ conversationId }: { conversationId?: string }) {
 
     // Feature toggles
     const [searchEnabled, setSearchEnabled] = useState(false);
+    const [searchResultCount, setSearchResultCount] = useState<number>(3);
     const [thinkEnabled, setThinkEnabled] = useState(true);
+    const [reasoningLevel, setReasoningLevel] = useState<string>("medium");
     const [memoryEnabled, setMemoryEnabled] = useState(true);
 
 
@@ -39,14 +41,9 @@ export function ChatInterface({ conversationId }: { conversationId?: string }) {
 
     // Helper to determine if the selected model realistically supports exact features
     const selectedModel = models.find(m => m.id === selectedModelId);
-    const supportsThinking = selectedModel?.id.toLowerCase().includes("deepseek-r1") ||
-        selectedModel?.id.toLowerCase().includes("o1") ||
-        selectedModel?.id.toLowerCase().includes("o3") || false;
+    const supportsThinking = selectedModel?.supportsThinking || false;
+    const supportsSearch = selectedModel?.supportsSearch || false;
 
-    const supportsSearch = selectedModel?.id.toLowerCase().includes("sonar") ||
-        selectedModel?.id.toLowerCase().includes("online") ||
-        selectedModel?.id.toLowerCase().includes("perplexity") ||
-        selectedModel?.id.toLowerCase().includes("search") || false;
     return (
         <div className="flex flex-col h-full bg-neutral-950 max-h-screen">
             {/* Top Navigation / Model Selector */}
@@ -87,10 +84,14 @@ export function ChatInterface({ conversationId }: { conversationId?: string }) {
                 conversationId={conversationId}
                 selectedModelId={selectedModelId}
                 searchEnabled={searchEnabled}
+                searchResultCount={searchResultCount}
                 thinkEnabled={thinkEnabled}
+                reasoningLevel={reasoningLevel}
                 memoryEnabled={memoryEnabled}
                 setSearchEnabled={setSearchEnabled}
+                setSearchResultCount={setSearchResultCount}
                 setThinkEnabled={setThinkEnabled}
+                setReasoningLevel={setReasoningLevel}
                 setMemoryEnabled={setMemoryEnabled}
                 supportsSearch={supportsSearch}
                 supportsThinking={supportsThinking}

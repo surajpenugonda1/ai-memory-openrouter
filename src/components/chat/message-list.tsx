@@ -16,10 +16,14 @@ interface MessageListProps {
     conversationId?: string;
     selectedModelId: string;
     searchEnabled: boolean;
+    searchResultCount: number;
     thinkEnabled: boolean;
+    reasoningLevel: string;
     memoryEnabled: boolean;
     setSearchEnabled: (v: boolean) => void;
+    setSearchResultCount: (v: number) => void;
     setThinkEnabled: (v: boolean) => void;
+    setReasoningLevel: (v: string) => void;
     setMemoryEnabled: (v: boolean) => void;
     supportsSearch: boolean;
     supportsThinking: boolean;
@@ -29,10 +33,14 @@ export function MessageList({
     conversationId,
     selectedModelId,
     searchEnabled,
+    searchResultCount,
     thinkEnabled,
+    reasoningLevel,
     memoryEnabled,
     setSearchEnabled,
+    setSearchResultCount,
     setThinkEnabled,
+    setReasoningLevel,
     setMemoryEnabled,
     supportsSearch,
     supportsThinking
@@ -59,8 +67,12 @@ export function MessageList({
     selectedModelIdRef.current = selectedModelId;
     const searchEnabledRef = useRef(searchEnabled);
     searchEnabledRef.current = searchEnabled;
+    const searchResultCountRef = useRef(searchResultCount);
+    searchResultCountRef.current = searchResultCount;
     const thinkEnabledRef = useRef(thinkEnabled);
     thinkEnabledRef.current = thinkEnabled;
+    const reasoningLevelRef = useRef(reasoningLevel);
+    reasoningLevelRef.current = reasoningLevel;
     const memoryEnabledRef = useRef(memoryEnabled);
     memoryEnabledRef.current = memoryEnabled;
 
@@ -69,7 +81,9 @@ export function MessageList({
         body: () => ({
             modelId: selectedModelIdRef.current,
             searchEnabled: searchEnabledRef.current,
+            searchResultCount: searchResultCountRef.current,
             thinkEnabled: thinkEnabledRef.current,
+            reasoningLevel: reasoningLevelRef.current,
             memoryEnabled: memoryEnabledRef.current,
             conversationId: activeConversationIdRef.current,
         }),
@@ -84,6 +98,8 @@ export function MessageList({
         }
     });
 
+    console.log("messages", messages);
+
     const isLoading = status === 'submitted' || status === 'streaming';
 
     useEffect(() => {
@@ -96,7 +112,8 @@ export function MessageList({
                 setMessages(history.map((msg: any) => ({
                     id: msg.id,
                     role: msg.role,
-                    parts: [{ type: "text", text: msg.content }],
+                    content: msg.content,
+                    parts: msg.parts || [{ type: "text", text: msg.content }],
                     createdAt: msg.createdAt,
                 })));
             }
@@ -221,19 +238,45 @@ export function MessageList({
                         </label>
 
                         {supportsSearch && (
-                            <label className="flex items-center gap-2 text-xs font-medium text-neutral-400 cursor-pointer hover:text-neutral-200 transition-colors">
-                                <Switch checked={searchEnabled} onCheckedChange={setSearchEnabled} className="scale-75 data-[state=checked]:bg-sky-500" />
-                                <Search size={14} className={searchEnabled ? "text-sky-400" : ""} />
-                                Web Search
-                            </label>
+                            <div className="flex items-center gap-2">
+                                <label className="flex items-center gap-2 text-xs font-medium text-neutral-400 cursor-pointer hover:text-neutral-200 transition-colors">
+                                    <Switch checked={searchEnabled} onCheckedChange={setSearchEnabled} className="scale-75 data-[state=checked]:bg-sky-500" />
+                                    <Search size={14} className={searchEnabled ? "text-sky-400" : ""} />
+                                    Web Search
+                                </label>
+                                {searchEnabled && (
+                                    <select
+                                        value={searchResultCount}
+                                        onChange={(e) => setSearchResultCount(Number(e.target.value))}
+                                        className="bg-neutral-900 border border-neutral-700 text-xs rounded-md text-neutral-300 px-1 py-0.5 outline-none focus:border-sky-500"
+                                    >
+                                        {[1, 2, 3, 4, 5].map(num => (
+                                            <option key={num} value={num}>{num} {num === 1 ? 'result' : 'results'}</option>
+                                        ))}
+                                    </select>
+                                )}
+                            </div>
                         )}
 
                         {supportsThinking && (
-                            <label className="flex items-center gap-2 text-xs font-medium text-neutral-400 cursor-pointer hover:text-neutral-200 transition-colors">
-                                <Switch checked={thinkEnabled} onCheckedChange={setThinkEnabled} className="scale-75 data-[state=checked]:bg-purple-500" />
-                                <Brain size={14} className={thinkEnabled ? "text-purple-400" : ""} />
-                                Reasoning
-                            </label>
+                            <div className="flex items-center gap-2">
+                                <label className="flex items-center gap-2 text-xs font-medium text-neutral-400 cursor-pointer hover:text-neutral-200 transition-colors">
+                                    <Switch checked={thinkEnabled} onCheckedChange={setThinkEnabled} className="scale-75 data-[state=checked]:bg-purple-500" />
+                                    <Brain size={14} className={thinkEnabled ? "text-purple-400" : ""} />
+                                    Reasoning
+                                </label>
+                                {thinkEnabled && (
+                                    <select
+                                        value={reasoningLevel}
+                                        onChange={(e) => setReasoningLevel(e.target.value)}
+                                        className="bg-neutral-900 border border-neutral-700 text-xs rounded-md text-neutral-300 px-1 py-0.5 outline-none focus:border-purple-500"
+                                    >
+                                        <option value="low">Low</option>
+                                        <option value="medium">Medium</option>
+                                        <option value="high">High</option>
+                                    </select>
+                                )}
+                            </div>
                         )}
                     </div>
 
