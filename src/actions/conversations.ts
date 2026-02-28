@@ -55,6 +55,8 @@ export async function getMessages(conversationId: string) {
                 id: messages.id,
                 role: messages.role,
                 content: messages.content,
+                reasoning: messages.reasoning,
+                sources: messages.sources,
                 createdAt: messages.createdAt,
             })
             .from(messages)

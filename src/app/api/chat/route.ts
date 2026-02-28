@@ -133,48 +133,64 @@ export async function POST(req: Request) {
             };
         }
 
-        console.log('\n[LLM Request] ═══════════════════════════════════════');
-        console.log('[LLM Request] Model:', modelId || 'openai/gpt-4o-mini');
-        console.log(`[LLM Request] SearchEnabled: ${_searchEnabled}, ThinkingEnabled: ${_thinkEnabled}`);
-        console.log(`[LLM Request] Total messages: ${finalMessages.length}`);
-        finalMessages.forEach((m, i) => {
-            console.log(`  [${i}] role=${m.role} | ${m.content.length} chars | content="${m.content.slice(0, 150)}${m.content.length > 150 ? '...' : ''}"`);
-        });
-        console.log('[LLM Request] ═══════════════════════════════════════\n');
+        // console.log('\n[LLM Request] ═══════════════════════════════════════');
+        // console.log('[LLM Request] Model:', modelId || 'openai/gpt-4o-mini');
+        // console.log(`[LLM Request] SearchEnabled: ${_searchEnabled}, ThinkingEnabled: ${_thinkEnabled}`);
+        // console.log(`[LLM Request] Total messages: ${finalMessages.length}`);
+        // finalMessages.forEach((m, i) => {
+        //     console.log(`  [${i}] role=${m.role} | ${m.content.length} chars | content="${m.content.slice(0, 150)}${m.content.length > 150 ? '...' : ''}"`);
+        // });
+        // console.log('[LLM Request] ═══════════════════════════════════════\n');
         const result = streamText({
             model: openrouter.chat(modelId || 'openai/gpt-4o-mini', settings),
             messages: finalMessages,
-            // OpenRouter specific plugins/features can be appended to Provider Options in AI SDK 3.x
-            // Or natively handled by the model. 
             async onFinish(data) {
                 const { text, response } = data;
                 console.log("data", data);
                 // Save AI response
                 try {
                     // Extract structured parts from the response messages
-                    // This handles reasoning and text parts from newer AI SDK versions
                     const assistantMessage = response.messages.find(m => m.role === 'assistant');
                     let parts = assistantMessage?.content || [{ type: 'text', text }];
+                    let sources: any[] = data.sources || [];
+                    let reasoning = "";
 
                     // Map OpenRouter search plugins sources to `source-url` types
                     if (Array.isArray(parts)) {
-                        parts = parts.map((part: any) => {
-                            if (part.type === 'source' && part.sourceType === 'url') {
-                                return {
-                                    type: 'source-url',
-                                    url: part.url,
-                                    title: part.title,
-                                }
+                        parts.forEach((part: any) => {
+                            if (part.type === 'reasoning') {
+                                reasoning = part.text;
                             }
-                            return part;
                         });
                     }
+
+                    sources = sources.map((source: any) => {
+                        return {
+                            type: 'source-url',
+                            url: source.url,
+                            title: source.title,
+                            sourceId: source.sourceId
+                        }
+                    })
+
+                    console.log("sources", sources);
+                    console.log("reasoning", reasoning);
 
                     await db.insert(messages).values({
                         conversationId: activeConversationId,
                         role: 'assistant',
                         content: text,
-                        parts: parts,
+                        reasoning: reasoning,
+                        sources: sources,
+                        details: {
+                            model: data.model.modelId,
+                            provider: data.model.provider,
+                            promptTokens: data.usage.inputTokens,
+                            completionTokens: data.usage.outputTokenDetails.textTokens,
+                            reasoningTokens: data.usage.reasoningTokens,
+                            totalTokens: data.usage.totalTokens,
+                            cost: data.usage.raw.cost
+                        },
                     } as any);
                 } catch (e) {
                     console.error("Failed to save assistant message to DB:", e);

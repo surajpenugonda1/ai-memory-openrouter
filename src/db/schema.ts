@@ -1,4 +1,4 @@
-import { pgTable, text, timestamp, boolean, uuid, customType } from 'drizzle-orm/pg-core';
+import { pgTable, text, timestamp, boolean, uuid, customType, jsonb } from 'drizzle-orm/pg-core';
 
 const vector = customType<{ data: number[], config: { dimensions: number } }>({
     dataType(config) {
@@ -29,6 +29,22 @@ export const conversations = pgTable('conversations', {
     updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });
 
+export type MessageSource = {
+    title: string;
+    url: string;
+    sourceId?: string;
+};
+
+export type MessageDetails = {
+    model: string,
+    provider: string,
+    promptTokens: number,
+    completionTokens: number,
+    reasoningTokens: number,
+    totalTokens: number,
+    cost: number
+}
+
 export const messages = pgTable('messages', {
     id: uuid('id').defaultRandom().primaryKey(),
     conversationId: uuid('conversation_id')
@@ -36,6 +52,9 @@ export const messages = pgTable('messages', {
         .references(() => conversations.id, { onDelete: 'cascade' }),
     role: text('role', { enum: ['user', 'assistant'] }).notNull(),
     content: text('content').notNull(),
+    reasoning: text('reasoning'),
+    sources: jsonb('sources').$type<MessageSource[]>(),
+    details: jsonb('details').$type<MessageDetails>(),
     createdAt: timestamp('created_at').defaultNow().notNull(),
 });
 

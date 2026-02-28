@@ -13,22 +13,22 @@ export function ThinkAccordion({ content, isStreaming = false }: ThinkAccordionP
     const [isOpen, setIsOpen] = useState(false);
 
     // Auto-open when streaming reasoning starts
-    useEffect(() => {
-        if (isStreaming && !isOpen) {
-            setIsOpen(true);
-        }
-    }, [isStreaming, isOpen]);
+    // useEffect(() => {
+    //     if (isStreaming && !isOpen) {
+    //         setIsOpen(true);
+    //     }
+    // }, [isStreaming, isOpen]);
 
     return (
         <div className={`my-2 rounded-lg border overflow-hidden transition-colors duration-300 ${isStreaming
-                ? "border-purple-500/30 bg-purple-500/5"
-                : "border-indigo-500/20 bg-indigo-500/5"
+            ? "border-purple-500/30 bg-purple-500/5"
+            : "border-indigo-500/20 bg-indigo-500/5"
             }`}>
             <button
                 onClick={() => setIsOpen(!isOpen)}
                 className="flex w-full items-center justify-between p-3 text-sm font-medium text-indigo-300 hover:bg-indigo-500/10 transition-colors"
             >
-                <div className="flex items-center gap-2">
+                <div className="flex flex-1 items-center gap-2">
                     {isStreaming ? (
                         <Loader2 size={16} className="text-purple-400 animate-spin" />
                     ) : (

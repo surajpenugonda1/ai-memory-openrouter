@@ -98,7 +98,7 @@ export function MessageList({
         }
     });
 
-    console.log("messages", messages);
+    // console.log("messages", messages);
 
     const isLoading = status === 'submitted' || status === 'streaming';
 
@@ -109,19 +109,43 @@ export function MessageList({
             const history = await getMessages(conversationId!);
             if (history.length > 0) {
                 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                setMessages(history.map((msg: any) => ({
-                    id: msg.id,
-                    role: msg.role,
-                    content: msg.content,
-                    parts: msg.parts || [{ type: "text", text: msg.content }],
-                    createdAt: msg.createdAt,
-                })));
+                setMessages(history.map((msg: any) => {
+                    const parts: any[] = [];
+                    if (msg.reasoning) {
+                        parts.push({ type: "reasoning", text: msg.reasoning });
+                    }
+                    if (msg.content) {
+                        parts.push({ type: "text", text: msg.content });
+                    }
+                    if (msg.sources && Array.isArray(msg.sources)) {
+                        msg.sources.forEach((s: any) => {
+                            parts.push({
+                                type: "source-url",
+                                url: s.url,
+                                title: s.title,
+                                sourceId: s.sourceId
+                            });
+                        });
+                    }
+                    if (parts.length === 0) {
+                        parts.push({ type: "text", text: msg.content || "" });
+                    }
+
+                    return {
+                        id: msg.id,
+                        role: msg.role,
+                        content: msg.content || "",
+                        parts: parts,
+                        createdAt: msg.createdAt,
+                    };
+                }));
             }
         }
         loadHistory();
     }, [conversationId, setMessages]);
 
     useEffect(() => {
+        if (isLoading) return;
         messagesEndRef.current?.scrollIntoView({ behavior: 'instant' });
     }, [messages]);
 
