@@ -4,6 +4,7 @@ import { auth } from '@/lib/auth';
 import { db } from '@/db';
 import { messages, conversations, memoryChunks as memory_chunks, users } from '@/db/schema';
 import { eq, sql, desc } from 'drizzle-orm';
+import { after } from 'next/server';
 
 const openrouter = createOpenRouter({
     apiKey: process.env.OPENROUTER_API_KEY,
@@ -56,7 +57,19 @@ export async function POST(req: Request) {
 
         // 1. Establish or Create Conversation
         let activeConversationId = conversationId;
-        if (!activeConversationId) {
+
+        if (activeConversationId) {
+            // Verify if the conversation actually exists in the DB, some clients generate UUIDs manually
+            const existingConv = await db.select({ id: conversations.id }).from(conversations).where(eq(conversations.id, activeConversationId)).limit(1);
+            if (existingConv.length === 0) {
+                const [newConv] = await db.insert(conversations).values({
+                    id: activeConversationId,
+                    userId,
+                    title: latestMessageText.slice(0, 50) + "...",
+                }).returning();
+                activeConversationId = newConv.id;
+            }
+        } else {
             const [newConv] = await db.insert(conversations).values({
                 userId,
                 title: latestMessageText.slice(0, 50) + "...",
@@ -189,7 +202,7 @@ export async function POST(req: Request) {
                             completionTokens: data.usage.outputTokenDetails.textTokens,
                             reasoningTokens: data.usage.reasoningTokens,
                             totalTokens: data.usage.totalTokens,
-                            cost: data.usage.raw.cost
+                            cost: data.usage.raw?.cost || 0
                         },
                     } as any);
                 } catch (e) {
@@ -218,27 +231,39 @@ export async function POST(req: Request) {
                 }
 
                 // If Memory is enabled, save this incoming interaction to vector DB for future context
-                if (memoryEnabled) {
-                    Promise.allSettled([
-                        embed({ model: openrouter.embedding('text-embedding-3-small'), value: latestMessageText })
-                            .then(({ embedding }) => db.insert(memory_chunks).values({
-                                userId,
-                                content: `User: ${latestMessageText}`,
-                                embedding: embedding
-                            })),
-                        embed({ model: openrouter.embedding('text-embedding-3-small'), value: text })
-                            .then(({ embedding }) => db.insert(memory_chunks).values({
-                                userId,
-                                content: `AI: ${text.slice(0, 500)}`, // Truncated to avoid huge DB text chunks
-                                embedding: embedding
-                            }))
-                    ]).then(results => {
-                        results.forEach((result, idx) => {
-                            if (result.status === 'rejected') {
-                                console.error(`Background memory vector insertion failed for chunk ${idx}:`, result.reason);
-                            }
+                if (true) {
+                    after(async () => {
+                        // Start background fact extraction
+                        import('ai').then(({ generateText }) => {
+                            generateText({
+                                model: openrouter.chat('google/gemini-2.5-flash'), // Fast, cheap model
+                                system: "You are a memory extraction assistant. Your job is to extract concise, factual, and long-term relevant information from the following conversation turn between a User and an AI. \n\nRULES:\n1. Ignore pleasantries, greetings, and generic conversational filler (e.g., 'Hello', 'Thanks', 'Sure, here is the answer').\n2. Extract core facts about the user (preferences, statements of fact) or the objective knowledge discussed.\n3. Return ONLY the distilled facts. If there is no meaningful information to save, return the exact string 'EMPTY'.",
+                                prompt: `User: ${latestMessageText}\n\nAI: ${text}`
+                            }).then(async (distilledResponse) => {
+                                const distilledText = distilledResponse.text.trim();
+                                if (distilledText && distilledText !== 'EMPTY') {
+                                    console.log('[Memory Extraction] Saving distilled fact:', distilledText);
+                                    try {
+                                        const { embedding } = await embed({
+                                            model: openrouter.embedding('text-embedding-3-small'),
+                                            value: distilledText
+                                        });
+                                        await db.insert(memory_chunks).values({
+                                            userId,
+                                            content: distilledText,
+                                            embedding: embedding
+                                        });
+                                    } catch (e) {
+                                        console.error("[Memory Extraction] Failed to embed/save fact:", e);
+                                    }
+                                } else {
+                                    console.log('[Memory Extraction] Ignored turn (no core facts extracted).');
+                                }
+                            }).catch(e => {
+                                console.error("[Memory Extraction] LLM extraction failed:", e);
+                            });
                         });
-                    });
+                    })
                 }
             },
         });

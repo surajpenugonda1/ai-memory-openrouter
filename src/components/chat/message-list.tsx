@@ -57,11 +57,11 @@ export function MessageList({
         const newConvId = response.headers.get('x-conversation-id');
         if (newConvId && newConvId !== activeConversationIdRef.current) {
             activeConversationIdRef.current = newConvId;
-            router.replace(`/chat/${newConvId}`, { scroll: false });
+            window.history.replaceState({}, '', `/chat/${newConvId}`);
         }
 
         return response;
-    }, [router]);
+    }, []);
 
     const selectedModelIdRef = useRef(selectedModelId);
     selectedModelIdRef.current = selectedModelId;
