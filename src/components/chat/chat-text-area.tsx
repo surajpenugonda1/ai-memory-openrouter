@@ -26,7 +26,7 @@ export function ChatTextArea({ onSendMessage, isLoading }: ChatTextAreaProps) {
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 placeholder="Type your message..."
-                className="min-h-[60px] max-h-[200px] w-full resize-none bg-transparent border-0 focus-visible:ring-0 text-white placeholder:text-neutral-500 py-4 px-4 pr-12 scrollbar-thin"
+                className="min-h-[60px] max-h-[200px] w-full resize-none bg-transparent border-0 focus-visible:ring-0 text-white placeholder:text-neutral-500 py-4 px-4 sm:px-5 scrollbar-thin"
                 onKeyDown={(e) => {
                     if (e.key === "Enter" && !e.shiftKey) {
                         e.preventDefault();
@@ -34,7 +34,7 @@ export function ChatTextArea({ onSendMessage, isLoading }: ChatTextAreaProps) {
                     }
                 }}
             />
-            <div className="flex items-center justify-between px-4 pb-3">
+            <div className="flex items-center justify-between px-3 sm:px-4 pb-2 sm:pb-3">
                 <div className="flex gap-2">
                     <Button type="button" variant="ghost" size="icon" className="h-8 w-8 rounded-full text-neutral-400 hover:text-white hover:bg-neutral-800">
                         <ImageIcon size={16} />

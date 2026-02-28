@@ -162,8 +162,8 @@ export function MessageList({
     return (
         <div className="flex flex-col flex-1 min-h-0">
             {/* Messages Area */}
-            <ScrollArea className="flex-1 min-h-0 overflow-hidden p-4 md:p-6 lg:p-8">
-                <div className="max-w-3xl mx-auto space-y-6 pb-24 relative">
+            <ScrollArea className="flex-1 min-h-0 overflow-hidden p-3 sm:p-4 md:p-6 lg:p-8">
+                <div className="max-w-3xl mx-auto space-y-4 sm:space-y-6 pb-24 relative">
                     {messages.length === 0 && (
                         <div className="flex flex-col items-center justify-center pt-16 md:pt-24 text-center w-full max-w-2xl mx-auto px-4">
                             <div className="relative mb-8 group">
@@ -254,7 +254,7 @@ export function MessageList({
                     className="max-w-3xl mx-auto relative flex flex-col w-full bg-neutral-900 rounded-2xl border border-neutral-700/50 shadow-2xl focus-within:border-indigo-500/50 focus-within:ring-1 focus-within:ring-indigo-500/50 transition-all overflow-hidden"
                 >
                     {/* Feature Toggles Bar */}
-                    <div className="flex items-center gap-4 px-4 py-2 bg-neutral-950/30 border-b border-neutral-800/50 overflow-x-auto scrollbar-none">
+                    <div className="flex items-center gap-3 sm:gap-4 px-3 sm:px-4 py-2 bg-neutral-950/30 border-b border-neutral-800/50 overflow-x-auto scrollbar-none whitespace-nowrap">
                         <label className="flex items-center gap-2 text-xs font-medium text-neutral-400 cursor-pointer hover:text-neutral-200 transition-colors">
                             <Switch checked={memoryEnabled} onCheckedChange={setMemoryEnabled} className="scale-75 data-[state=checked]:bg-indigo-500" />
                             <DatabaseZap size={14} className={memoryEnabled ? "text-indigo-400" : ""} />
