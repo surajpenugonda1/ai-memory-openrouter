@@ -17,7 +17,7 @@ export const users = pgTable('users', {
     memoryEnabled: boolean('memory_enabled').default(false).notNull(),
     normalMessageCount: customType<{ data: number, driverData: number }>({ dataType() { return 'integer' } })('normal_message_count').default(0).notNull(),
     premiumMessageCount: customType<{ data: number, driverData: number }>({ dataType() { return 'integer' } })('premium_message_count').default(0).notNull(),
-    createdAt: timestamp('created_at').defaultNow().notNull(),
+    createdAt: timestamp('created_at').defaultNow().$defaultFn(() => new Date()).notNull(),
 });
 
 export const conversations = pgTable('conversations', {
@@ -26,7 +26,7 @@ export const conversations = pgTable('conversations', {
         .notNull()
         .references(() => users.id, { onDelete: 'cascade' }),
     title: text('title').notNull(),
-    updatedAt: timestamp('updated_at').defaultNow().notNull(),
+    updatedAt: timestamp('updated_at').defaultNow().$defaultFn(() => new Date()).notNull(),
 });
 
 export type MessageSource = {
@@ -55,7 +55,7 @@ export const messages = pgTable('messages', {
     reasoning: text('reasoning'),
     sources: jsonb('sources').$type<MessageSource[]>(),
     details: jsonb('details').$type<MessageDetails>(),
-    createdAt: timestamp('created_at').defaultNow().notNull(),
+    createdAt: timestamp('created_at').defaultNow().$defaultFn(() => new Date()).notNull(),
 });
 
 export const memoryChunks = pgTable('memory_chunks', {
@@ -65,5 +65,5 @@ export const memoryChunks = pgTable('memory_chunks', {
         .references(() => users.id, { onDelete: 'cascade' }),
     content: text('content').notNull(),
     embedding: vector('embedding', { dimensions: 1536 }).notNull(), // Assuming OpenAI size, change to 768 or other if using different model
-    createdAt: timestamp('created_at').defaultNow().notNull(),
+    createdAt: timestamp('created_at').defaultNow().$defaultFn(() => new Date()).notNull(),
 });
